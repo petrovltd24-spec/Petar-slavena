@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Петър + Славена ❤️</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+min-height:100vh;
+font-family:Arial,sans-serif;
+color:white;
+background:linear-gradient(135deg,#160914,#5b1237,#210817);
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+}
+
+.container{
+width:100%;
+max-width:600px;
+text-align:center;
+background:rgba(255,255,255,.10);
+backdrop-filter:blur(15px);
+border-radius:30px;
+padding:30px 20px;
+box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+
+h1{font-size:38px;margin-bottom:10px}
+h2{font-size:27px}
+p{font-size:18px;line-height:1.5}
+
+.heart{
+font-size:55px;
+animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+50%{transform:scale(1.15)}
+}
+
+button,.upload{
+display:inline-block;
+border:none;
+border-radius:50px;
+padding:15px 25px;
+margin-top:15px;
+background:linear-gradient(90deg,#ff477e,#ff1761);
+color:white;
+font-size:17px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 10px 25px rgba(255,23,97,.3);
+}
+
+.answers{
+display:flex;
+flex-direction:column;
+gap:12px;
+margin-top:20px;
+}
+
+.answers button{
+width:100%;
+background:rgba(255,255,255,.12);
+box-shadow:none;
+border:1px solid rgba(255,255,255,.2);
+}
+
+input{display:none}
+
+.puzzle{
+width:min(420px,90vw);
+aspect-ratio:1;
+margin:25px auto;
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:4px;
+}
+
+.tile{
+border-radius:8px;
+background-repeat:no-repeat;
+cursor:pointer;
+border:2px solid rgba(255,255,255,.3);
+transition:.2s;
+}
+
+.tile.selected{
+border:4px solid white;
+transform:scale(.95);
+}
+
+.message{
+font-size:22px;
+font-weight:bold;
+line-height:1.6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="app"></div>
+
+<script>
+
+const app=document.getElementById("app");
+
+let questionIndex=0;
+let photo=null;
+let puzzleOrder=[];
+let selectedTile=null;
+
+const questions=[
+
+{
+question:"Как се запознахме?",
+answers:[
+"По най-случайния начин ❤️",
+"В интернет 😄",
+"На едно специално място ❤️",
+"Това си остава наша тайна 🤫"
+]
+},
+
+{
+question:"Къде беше първата ни среща?",
+answers:[
+"На нашето място ❤️",
+"В едно заведение 😍",
+"Навън, само двамата ❤️",
+"Това си остава наша тайна 🤫"
+]
+},
+
+{
+question:"Какво обичам?",
+answers:[
+"Теб ❤️",
+"Колите 😎",
+"Музиката 🎶",
+"Всичко изброено ❤️"
+]
+},
+
+{
+question:"Без какво не мога?",
+answers:[
+"Без теб ❤️",
+"Без музика 🎶",
+"Без кафе ☕",
+"Без всичко изброено ❤️"
+]
+}
+
+];
+
+function home(){
+
+app.innerHTML=`
+
+<div class="heart">❤️</div>
+
+<h1>ПЕТЪР + СЛАВЕНА ❤️</h1>
+
+<p>
+Едно малко нещо от мен за теб 🥹❤️
+</p>
+
+<button onclick="start()">
+ЗАПОЧВАМЕ ❤️
+</button>
+
+`;
+
+}
+
+function start(){
+
+questionIndex=0;
+showQuestion();
+
+}
+
+function showQuestion(){
+
+let q=questions[questionIndex];
+
+app.innerHTML=`
+
+<p>${questionIndex+1} / ${questions.length}</p>
+
+<h2>${q.question}</h2>
+
+<div class="answers">
+
+${q.answers.map((answer,index)=>`
+
+<button onclick="nextQuestion(${index})">
+${answer}
+</button>
+
+`).join("")}
+
+</div>
+
+`;
+
+}
+
+function nextQuestion(index){
+
+questionIndex++;
+
+if(questionIndex<questions.length){
+
+showQuestion();
+
+}else{
+
+showUpload();
+
+}
+
+}
+
+function showUpload(){
+
+app.innerHTML=`
+
+<div class="heart">📸</div>
+
+<h2>А сега най-важното… ❤️</h2>
+
+<p>
+Избери ваша снимка.
+<br>
+Тя автоматично ще стане пъзел. 🧩❤️
+</p>
+
+<label class="upload">
+
+ИЗБЕРИ СНИМКА ❤️
+
+<input
+type="file"
+id="photoInput"
+accept="image/*"
+>
+
+</label>
+
+`;
+
+document
+.getElementById("photoInput")
+.addEventListener("change",handlePhoto);
+
+}
+
+function handlePhoto(event){
+
+const file=event.target.files[0];
+
+if(!file)return;
+
+const reader=new FileReader();
+
+reader.onload=function(e){
+
+photo=e.target.result;
+createPuzzle();
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+function createPuzzle(){
+
+puzzleOrder=[0,1,2,3,4,5,6,7,8];
+
+do{
+
+puzzleOrder.sort(()=>Math.random()-.5);
+
+}while(isSolved());
+
+selectedTile=null;
+
+app.innerHTML=`
+
+<h2>Нареди нашата снимка ❤️</h2>
+
+<p>
+Натисни две части, за да ги размениш. 🧩
+</p>
+
+<div class="puzzle" id="puzzle"></div>
+
+`;
+
+drawPuzzle();
+
+}
+
+function drawPuzzle(){
+
+const puzzle=document.getElementById("puzzle");
+
+puzzle.innerHTML="";
+
+puzzleOrder.forEach((piece,position)=>{
+
+const tile=document.createElement("div");
+
+tile.className="tile";
+
+if(selectedTile===position){
+
+tile.classList.add("selected");
+
+}
+
+const x=piece%3;
+const y=Math.floor(piece/3);
+
+tile.style.backgroundImage=`url("${photo}")`;
+
+tile.style.backgroundSize="300% 300%";
+
+tile.style.backgroundPosition=
+`${x*50}% ${y*50}%`;
+
+tile.onclick=()=>selectTile(position);
+
+puzzle.appendChild(tile);
+
+});
+
+}
+
+function selectTile(position){
+
+if(selectedTile===null){
+
+selectedTile=position;
+drawPuzzle();
+return;
+
+}
+
+if(selectedTile===position){
+
+selectedTile=null;
+drawPuzzle();
+return;
+
+}
+
+[
+puzzleOrder[selectedTile],
+puzzleOrder[position]
+]=[
+puzzleOrder[position],
+puzzleOrder[selectedTile]
+];
+
+selectedTile=null;
+
+drawPuzzle();
+
+if(isSolved()){
+
+setTimeout(finalQuestion,700);
+
+}
+
+}
+
+function isSolved(){
+
+return puzzleOrder.every(
+(piece,index)=>piece===index
+);
+
+}
+
+function finalQuestion(){
+
+app.innerHTML=`
+
+<div class="heart">🥹❤️</div>
+
+<h2>
+Какво обичам да правя с теб? ❤️
+</h2>
+
+<div class="answers">
+
+<button onclick="unlock()">
+ВСИЧКО ИЗБРОЕНО ❤️
+</button>
+
+<button onclick="wrongAnswer()">
+Да се караме 😂
+</button>
+
+<button onclick="wrongAnswer()">
+Да скучая 😄
+</button>
+
+</div>
+
+`;
+
+}
+
+function wrongAnswer(){
+
+alert("Ммм... нещо не е така 😂❤️");
+
+}
+
+function unlock(){
+
+app.innerHTML=`
+
+<div class="heart">❤️</div>
+
+<h2>
+Искаш ли да видиш… ❤️
+</h2>
+
+<button onclick="reveal()">
+ДА 🥹❤️
+</button>
+
+`;
+
+}
+
+function reveal(){
+
+app.innerHTML=`
+
+<div class="heart">❤️</div>
+
+<h2>
+Славена, ти си моето „всичко“. ❤️
+</h2>
+
+<div class="message">
+
+Благодаря ти за всеки момент,
+всяка усмивка и всяка секунда с теб.
+
+<br><br>
+
+Обичам те. 🥹❤️
+
+<br><br>
+
+— Петър ❤️
+
+</div>
+
+`;
+
+}
+
+home();
+
+</script>
+
+</body>
+  </html>
